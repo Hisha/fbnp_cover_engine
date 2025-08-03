@@ -4,60 +4,71 @@ import pangocairocffi
 import cairocffi as cairo
 import pangocffi as pango
 from PIL import Image
-import io
 import subprocess
 
+# Directory to store downloaded fonts
 FONTS_DIR = os.path.expanduser("~/.fbnp_cover_engine/fonts")
 os.makedirs(FONTS_DIR, exist_ok=True)
+
 
 def resolve_font(font_family):
     """
     Ensure the requested font is available locally.
-    If not, attempt to download from Google Fonts and return its path.
+    If not, download from Google Fonts and return its path.
+    Falls back to Arial if everything fails.
     """
+
     # Normalize font name for file naming
     normalized = font_family.lower().replace(" ", "")
     font_path = os.path.join(FONTS_DIR, f"{normalized}.ttf")
 
-    # Check if already downloaded
+    # ✅ Check if already downloaded
     if os.path.exists(font_path):
         return font_path
 
-    # Check if font exists system-wide using fc-list
+    # ✅ Check if font exists system-wide using fc-list
     try:
         result = subprocess.run(["fc-list", font_family], capture_output=True, text=True)
         if result.stdout.strip():
-            return font_family  # System font available
+            # Font is installed system-wide; just return the family name
+            return font_family
     except FileNotFoundError:
-        pass  # fc-list not available, skip
+        pass  # `fc-list` not available, skip
 
-    # Attempt to download from Google Fonts GitHub repo
+    # ✅ Attempt to download from Google Fonts
     print(f"🔍 Font '{font_family}' not found locally. Downloading from Google Fonts...")
+    google_font_name = font_family.lower().replace(" ", "")
+    url = f"https://github.com/google/fonts/raw/main/ofl/{google_font_name}/{google_font_name}-regular.ttf"
+
     try:
-        url = f"https://github.com/google/fonts/raw/main/ofl/{normalized}/{normalized}-regular.ttf"
-        r = requests.get(url, timeout=10)
-        if r.status_code == 200:
+        response = requests.get(url, timeout=10)
+        if response.status_code == 200:
             with open(font_path, "wb") as f:
-                f.write(r.content)
+                f.write(response.content)
             print(f"✅ Font downloaded and saved to {font_path}")
             return font_path
         else:
-            raise Exception(f"Font download failed with status {r.status_code}")
+            raise Exception(f"Font download failed (status {response.status_code})")
     except Exception as e:
         print(f"⚠️ Failed to download font '{font_family}': {e}")
         print("➡️ Falling back to default font: Arial")
-        return "Arial"  # Fallback
+        return "Arial"  # Fallback to a safe system font
 
-def render_text(text, font_family, font_size, color, box_size, align="left"):
+
+def render_text(text, font_path_or_name, font_size, color, box_size, align="left"):
     """
     Render text into an image using Pango with Cairo.
+    Supports both local font files and system fonts.
     """
     width, height = box_size
+
+    # Create Cairo surface and context
     surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, width, height)
     context = cairo.Context(surface)
 
+    # Create Pango layout
     layout = pangocairocffi.create_layout(context)
-    font_desc = pango.FontDescription(f"{font_family} {font_size}")
+    font_desc = pango.FontDescription(f"{font_path_or_name} {font_size}")
     layout.set_font_description(font_desc)
     layout.set_text(text)
 
@@ -78,6 +89,10 @@ def render_text(text, font_family, font_size, color, box_size, align="left"):
     img = Image.frombuffer("RGBA", (width, height), buf, "raw", "BGRA", 0, 1)
     return img
 
-def render_rotated_text(text, font_family, font_size, color, box_size, angle=90):
-    img = render_text(text, font_family, font_size, color, box_size)
+
+def render_rotated_text(text, font_path_or_name, font_size, color, box_size, angle=90):
+    """
+    Render rotated text (used for spine).
+    """
+    img = render_text(text, font_path_or_name, font_size, color, box_size)
     return img.rotate(angle, expand=True)
