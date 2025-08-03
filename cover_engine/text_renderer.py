@@ -4,7 +4,7 @@ import pangocffi as pango
 from PIL import Image
 import io
 
-def render_text(text, font_path, font_size=64, color=(0, 0, 0), box_size=(800, 200), align="center"):
+def render_text(text, font_family, font_size, color, box_size, align):
     width, height = box_size
 
     # Create Cairo surface and context
@@ -13,7 +13,7 @@ def render_text(text, font_path, font_size=64, color=(0, 0, 0), box_size=(800, 2
 
     # Create Pango layout
     layout = pangocairocffi.create_layout(context)
-    font_desc = pango.FontDescription(f"{font_path} {font_size}")
+    font_desc = pango.FontDescription(f"{font_family} {font_size}")
     layout.set_font_description(font_desc)
     layout.set_text(text)
 
@@ -35,7 +35,7 @@ def render_text(text, font_path, font_size=64, color=(0, 0, 0), box_size=(800, 2
 
     return img
 
-
-def render_rotated_text(text, font_path, font_size=64, color=(0, 0, 0), box_size=(800, 200), angle=90):
-    img = render_text(text, font_path, font_size, color, box_size)
+def render_rotated_text(text, font_family, font_size, color, box_size, angle):
+    img = render_text(text, font_family, font_size, color, box_size)
     return img.rotate(angle, expand=True)
+
