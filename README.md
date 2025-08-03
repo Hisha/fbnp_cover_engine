@@ -44,6 +44,9 @@ cairosvg==2.7.1
 
 # For CLI interface (optional but recommended)
 click==8.1.7
+
+# Pango for high-quality text layout and rendering
+pangocffi==0.13.0
 ```
 
 ## Usage
