@@ -10,38 +10,46 @@ class CoverLayoutEngine:
         self.dpi = 300
 
     def add_text(self, title, description, author,
-                 font_family, title_color, desc_color):
+                 font_family, title_font_size, desc_font_size, spine_font_size,
+                 title_color, desc_color):
+        """
+        Places title, spine text, and description onto the cover image with custom font sizes.
+        """
+
         # Resolve font to ensure it exists or download it
         font_path = resolve_font(font_family)
 
-        bleed = int(0.125 * self.dpi)
-        margin = int(0.25 * self.dpi)
+        # === Safe zone constants ===
+        bleed = int(0.125 * self.dpi)  # 0.125" bleed
+        margin = int(0.25 * self.dpi)  # 0.25" margin
 
-        # Front cover box
+        # === Calculate regions ===
+        # Front cover (title top 30%)
         front_x = self.spine_width + bleed
         front_width = (self.final_width - self.spine_width) // 2 - bleed - margin
         front_height = self.final_height - (2 * bleed) - (2 * margin)
         front_box = (front_width, int(front_height * 0.3))
 
-        # Back cover box
+        # Back cover (description top 50%)
         back_x = bleed
         back_width = (self.final_width - self.spine_width) // 2 - bleed - margin
         back_height = self.final_height - (2 * bleed) - (2 * margin)
         back_box = (back_width, int(back_height * 0.5))
 
+        # Spine text box
         spine_box = (int(self.spine_width * 0.9), int(self.final_height * 0.8))
 
-        # Title
-        title_img = render_text(title, font_path, 96, title_color, front_box, "center")
+        # === Render Title ===
+        title_img = render_text(title, font_path, title_font_size, title_color, front_box, "center")
         self.cover.paste(title_img, (front_x + margin, margin + bleed), title_img)
 
-        # Description
-        desc_img = render_text(description, font_path, 48, desc_color, back_box, "left")
+        # === Render Description ===
+        desc_img = render_text(description, font_path, desc_font_size, desc_color, back_box, "left")
         self.cover.paste(desc_img, (back_x + margin, margin + bleed), desc_img)
 
-        # Spine text
+        # === Render Spine Text ===
         spine_text = f"{title} • {author}" if author else title
-        spine_img = render_rotated_text(spine_text, font_path, 64, title_color, spine_box)
+        spine_img = render_rotated_text(spine_text, font_path, spine_font_size, title_color, spine_box)
         spine_x = (self.final_width // 2) - (spine_img.width // 2)
         spine_y = (self.final_height // 2) - (spine_img.height // 2)
         self.cover.paste(spine_img, (spine_x, spine_y), spine_img)
@@ -49,4 +57,5 @@ class CoverLayoutEngine:
         return self.cover
 
     def save(self, path):
+        """Save the final cover image with proper DPI."""
         self.cover.save(path, dpi=(self.dpi, self.dpi))
