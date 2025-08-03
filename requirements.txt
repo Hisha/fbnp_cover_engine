@@ -1,0 +1,5 @@
+Pillow
+cairo
+pycairo
+pangocffi
+colorthief
