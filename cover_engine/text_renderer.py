@@ -13,43 +13,40 @@ os.makedirs(FONTS_DIR, exist_ok=True)
 
 def resolve_font(font_family):
     """
-    Ensure the requested font is available locally or system-wide.
-    If downloaded, refresh font cache and return family name (not path).
+    Ensure the requested font is available system-wide for Pango.
+    If not, download it to ~/.fbnp_cover_engine/fonts and register it with fontconfig.
     """
-    # Check if available system-wide
+    # Check if already installed
     try:
         result = subprocess.run(["fc-list", font_family], capture_output=True, text=True)
         if result.stdout.strip():
-            return font_family  # Font is installed system-wide
+            return font_family  # System font available
     except FileNotFoundError:
-        pass
+        print("⚠️ fontconfig tools not available. Ensure fc-list and fc-cache are installed.")
+        return font_family
 
-    # Download from Google Fonts
+    # Download from Google Fonts if not installed
+    print(f"🔍 Font '{font_family}' not found. Downloading...")
     normalized = font_family.lower().replace(" ", "")
     font_path = os.path.join(FONTS_DIR, f"{normalized}-regular.ttf")
 
-    if os.path.exists(font_path):
-        return font_family  # Already downloaded, just return the family name
-
-    print(f"🔍 Font '{font_family}' not found. Downloading...")
-    url = f"https://github.com/google/fonts/raw/main/ofl/{normalized}/{normalized}-regular.ttf"
-
     try:
-        response = requests.get(url, timeout=10)
-        if response.status_code == 200:
+        url = f"https://github.com/google/fonts/raw/main/ofl/{normalized}/{normalized}-regular.ttf"
+        r = requests.get(url, timeout=15)
+        if r.status_code == 200:
             with open(font_path, "wb") as f:
-                f.write(response.content)
+                f.write(r.content)
+            print(f"✅ Downloaded font to {font_path}")
 
-            # Update font cache so Pango can see it
-            subprocess.run(["fc-cache", "-f", FONTS_DIR], check=False)
-            print(f"✅ Font downloaded and cache updated.")
-            return font_family  # Still return the family name
+            # Update fontconfig cache so Pango can use it
+            subprocess.run(["fc-cache", "-f", FONTS_DIR], check=True)
+            return font_family
         else:
-            raise Exception(f"Download failed: HTTP {response.status_code}")
+            print(f"⚠️ Failed to download font (status {r.status_code}). Falling back to Arial.")
+            return "Arial"
     except Exception as e:
-        print(f"⚠️ Failed to get font '{font_family}': {e}. Falling back to Arial.")
+        print(f"⚠️ Error downloading font: {e}. Falling back to Arial.")
         return "Arial"
-
 
 def render_text(text, font_path_or_name, font_size, color, box_size, align="left"):
     """
