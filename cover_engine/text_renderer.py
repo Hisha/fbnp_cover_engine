@@ -52,15 +52,12 @@ def is_font_available(font_name):
         return False
 
 def render_text(text, font_family, font_size, color, box_size, align="left"):
-    """
-    Render text into an image using Pango with Cairo.
-    """
     width, height = box_size
     surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, width, height)
     context = cairo.Context(surface)
 
     layout = pangocairocffi.create_layout(context)
-    font_desc = pango.FontDescription(f"{font_family} {font_size}")
+    font_desc = pango.FontDescription.from_string(f"{font_family} {font_size}")
     layout.set_font_description(font_desc)
     layout.set_text(text)
 
@@ -72,7 +69,7 @@ def render_text(text, font_family, font_size, color, box_size, align="left"):
     else:
         layout.set_alignment(pango.Alignment.LEFT)
 
-    context.set_source_rgb(color[0] / 255, color[1] / 255, color[2] / 255)
+    context.set_source_rgb(color[0]/255, color[1]/255, color[2]/255)
     pangocairocffi.show_layout(context, layout)
 
     buf = surface.get_data()
