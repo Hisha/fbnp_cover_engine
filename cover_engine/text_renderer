@@ -1,0 +1,11 @@
+def render_text(text, font_path, font_size, color, box_size, align="center"):
+    """
+    Render text into an image box using Pango/Cairo for precise typography.
+    """
+    pass
+
+def render_rotated_text(text, font_path, font_size, color, angle, position):
+    """
+    Render rotated text (e.g., for spine) at the given position.
+    """
+    pass
