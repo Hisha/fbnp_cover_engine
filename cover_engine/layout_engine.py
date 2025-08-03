@@ -9,8 +9,8 @@ class CoverLayoutEngine:
         self.spine_width = spine_width
         self.dpi = 300
 
-    def add_text(self, title, description, author=None,
-                 font_path="Arial.ttf", title_color=(0, 0, 0), desc_color=(0, 0, 0)):
+    def add_text(self, title, description, author,
+                 font_path, title_color, desc_color):
         """
         Places title, spine text, and description onto the cover image.
         Keeps proper safe margins for KDP.
