@@ -13,46 +13,42 @@ os.makedirs(FONTS_DIR, exist_ok=True)
 
 def resolve_font(font_family):
     """
-    Ensure the requested font is available locally.
-    If not, download from Google Fonts and return its path.
-    Falls back to Arial if everything fails.
+    Ensure the requested font is available locally or system-wide.
+    If downloaded, refresh font cache and return family name (not path).
     """
-
-    # Normalize font name for file naming
-    normalized = font_family.lower().replace(" ", "")
-    font_path = os.path.join(FONTS_DIR, f"{normalized}.ttf")
-
-    # ✅ Check if already downloaded
-    if os.path.exists(font_path):
-        return font_path
-
-    # ✅ Check if font exists system-wide using fc-list
+    # Check if available system-wide
     try:
         result = subprocess.run(["fc-list", font_family], capture_output=True, text=True)
         if result.stdout.strip():
-            # Font is installed system-wide; just return the family name
-            return font_family
+            return font_family  # Font is installed system-wide
     except FileNotFoundError:
-        pass  # `fc-list` not available, skip
+        pass
 
-    # ✅ Attempt to download from Google Fonts
-    print(f"🔍 Font '{font_family}' not found locally. Downloading from Google Fonts...")
-    google_font_name = font_family.lower().replace(" ", "")
-    url = f"https://github.com/google/fonts/raw/main/ofl/{google_font_name}/{google_font_name}-regular.ttf"
+    # Download from Google Fonts
+    normalized = font_family.lower().replace(" ", "")
+    font_path = os.path.join(FONTS_DIR, f"{normalized}-regular.ttf")
+
+    if os.path.exists(font_path):
+        return font_family  # Already downloaded, just return the family name
+
+    print(f"🔍 Font '{font_family}' not found. Downloading...")
+    url = f"https://github.com/google/fonts/raw/main/ofl/{normalized}/{normalized}-regular.ttf"
 
     try:
         response = requests.get(url, timeout=10)
         if response.status_code == 200:
             with open(font_path, "wb") as f:
                 f.write(response.content)
-            print(f"✅ Font downloaded and saved to {font_path}")
-            return font_path
+
+            # Update font cache so Pango can see it
+            subprocess.run(["fc-cache", "-f", FONTS_DIR], check=False)
+            print(f"✅ Font downloaded and cache updated.")
+            return font_family  # Still return the family name
         else:
-            raise Exception(f"Font download failed (status {response.status_code})")
+            raise Exception(f"Download failed: HTTP {response.status_code}")
     except Exception as e:
-        print(f"⚠️ Failed to download font '{font_family}': {e}")
-        print("➡️ Falling back to default font: Arial")
-        return "Arial"  # Fallback to a safe system font
+        print(f"⚠️ Failed to get font '{font_family}': {e}. Falling back to Arial.")
+        return "Arial"
 
 
 def render_text(text, font_path_or_name, font_size, color, box_size, align="left"):
@@ -88,7 +84,6 @@ def render_text(text, font_path_or_name, font_size, color, box_size, align="left
     buf = surface.get_data()
     img = Image.frombuffer("RGBA", (width, height), buf, "raw", "BGRA", 0, 1)
     return img
-
 
 def render_rotated_text(text, font_path_or_name, font_size, color, box_size, angle=90):
     """
