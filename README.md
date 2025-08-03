@@ -12,6 +12,18 @@ An automated layout engine to generate **professional KDP-ready coloring book co
 ✅ Spine text rendering  
 ✅ Ready for automation in n8n workflows  
 
+## Run this before Requirements.txt to avoid cairo errors
+```bash
+sudo apt update
+sudo apt install -y \
+    libcairo2 libcairo2-dev \
+    pkg-config \
+    python3-dev \
+    libfreetype6-dev \
+    libjpeg-dev \
+    zlib1g-dev
+```
+
 ## Requirements.txt
 ```bash
 # Core image processing
@@ -31,8 +43,7 @@ cairosvg==2.7.1
 
 # For CLI interface (optional but recommended)
 click==8.1.7
-
-
+```
 
 ## Usage
 ```bash
