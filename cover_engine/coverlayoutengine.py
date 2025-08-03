@@ -1,5 +1,6 @@
 import argparse
 from layout_engine import CoverLayoutEngine
+from text_renderer import resolve_font
 
 def main():
     parser = argparse.ArgumentParser(description="FBNP Cover Text Renderer CLI")
@@ -34,6 +35,9 @@ def main():
     title_color = hex_to_rgb(args.title_color)
     desc_color = hex_to_rgb(args.desc_color)
 
+    # === Resolve font (auto-download if missing) ===
+    font_path = resolve_font(args.font_family)
+
     # === Initialize engine ===
     engine = CoverLayoutEngine(args.cover, args.width, args.height, args.spine_width)
 
@@ -42,7 +46,7 @@ def main():
         title=args.title,
         description=args.description,
         author=args.author,
-        font_family=args.font_family,
+        font_family=font_path,
         title_font_size=args.title_size,
         desc_font_size=args.desc_size,
         spine_font_size=args.spine_size,
