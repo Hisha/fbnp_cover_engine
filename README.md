@@ -47,6 +47,7 @@ click==8.1.7
 
 # Pango for high-quality text layout and rendering
 pangocffi==0.13.0
+pangocairocffi==0.7.0
 ```
 
 ## Usage
