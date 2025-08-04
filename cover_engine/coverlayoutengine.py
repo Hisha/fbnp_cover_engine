@@ -34,6 +34,7 @@ def main():
     # === Optional Features ===
     parser.add_argument("--add_bg_box", action="store_true", help="Add semi-transparent white box behind text")
     parser.add_argument("--line_spacing", type=int, default=8, help="Line spacing for description text (in px)")
+    parser.add_argument("--debug", action="store_true", help="Draw debug rectangles for safe zones")
 
     args = parser.parse_args()
 
@@ -70,7 +71,7 @@ def main():
     print(f"   Spine: {SPINE_MAX_CHARS} chars max\n")
 
     # === Apply text ===
-    engine = CoverLayoutEngine(args.cover, args.width, args.height, args.spine_width)
+    engine = CoverLayoutEngine(args.cover, args.width, args.height, args.spine_width, debug=args.debug)
     print("🔍 Applying text to cover...")
     final_cover = engine.add_text(
         title=args.title,
