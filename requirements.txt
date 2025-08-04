@@ -18,3 +18,5 @@ click==8.1.7
 
 # HTTP library to get fonts if needed
 requests==2.32.4
+
+PyGObject==3.48.2
