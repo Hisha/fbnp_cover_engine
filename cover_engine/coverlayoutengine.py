@@ -1,6 +1,6 @@
 import argparse
 from layout_engine import CoverLayoutEngine
-from text_renderer import verify_font_available
+from text_renderer import verify_or_download_font  # ✅ Updated function name
 
 
 def main():
@@ -14,7 +14,7 @@ def main():
     parser.add_argument("--description", type=str, required=True, help="Back cover description text")
     parser.add_argument("--author", type=str, default="", help="Author name")
 
-    parser.add_argument("--font_family", type=str, required=True, help="Font family (must be installed, e.g., Arial)")
+    parser.add_argument("--font_family", type=str, required=True, help="Font family (e.g., Arial)")
     parser.add_argument("--title_size", type=int, default=96, help="Font size for title text")
     parser.add_argument("--desc_size", type=int, default=48, help="Font size for description text")
     parser.add_argument("--spine_size", type=int, default=64, help="Font size for spine text")
@@ -28,14 +28,6 @@ def main():
 
     args = parser.parse_args()
 
-    # === Validate font availability ===
-    try:
-        verify_font_available(args.font_family)
-        print(f"✅ Font '{args.font_family}' is available.")
-    except ValueError as e:
-        print(e)
-        exit(1)
-
     # === Convert colors from hex to RGB ===
     def hex_to_rgb(hex_color):
         hex_color = hex_color.lstrip('#')
@@ -43,6 +35,9 @@ def main():
 
     title_color = hex_to_rgb(args.title_color)
     desc_color = hex_to_rgb(args.desc_color)
+
+    # === Ensure font is available or download ===
+    font_family = verify_or_download_font(args.font_family)
 
     # === Initialize engine ===
     engine = CoverLayoutEngine(args.cover, args.width, args.height, args.spine_width)
@@ -52,7 +47,7 @@ def main():
         title=args.title,
         description=args.description,
         author=args.author,
-        font_family=args.font_family,  # ✅ Pass family name directly to Pango
+        font_family=font_family,  # ✅ Pango-compatible family name
         title_font_size=args.title_size,
         desc_font_size=args.desc_size,
         spine_font_size=args.spine_size,
