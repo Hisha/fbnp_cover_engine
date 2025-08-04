@@ -1,6 +1,6 @@
 import argparse
 from layout_engine import CoverLayoutEngine
-from text_renderer import verify_or_download_font  # ✅ Updated to use new logic
+from text_renderer import verify_font_available  # ✅ No downloads, just verify
 
 
 def main():
@@ -14,7 +14,7 @@ def main():
     parser.add_argument("--description", type=str, required=True, help="Back cover description text")
     parser.add_argument("--author", type=str, default="", help="Author name")
 
-    parser.add_argument("--font_family", type=str, required=True, help="Font family (e.g., Arial, Lobster)")
+    parser.add_argument("--font_family", type=str, required=True, help="Font family (must be installed, e.g., Arial)")
     parser.add_argument("--title_size", type=int, default=96, help="Font size for title text")
     parser.add_argument("--desc_size", type=int, default=48, help="Font size for description text")
     parser.add_argument("--spine_size", type=int, default=64, help="Font size for spine text")
@@ -36,9 +36,9 @@ def main():
     title_color = hex_to_rgb(args.title_color)
     desc_color = hex_to_rgb(args.desc_color)
 
-    # === Verify or download font ===
-    font_family = verify_or_download_font(args.font_family)
-    print(f"✅ Using font: {font_family}")
+    # === Verify font availability ===
+    verify_font_available(args.font_family)
+    print(f"✅ Font '{args.font_family}' is available.")
 
     # === Initialize engine ===
     engine = CoverLayoutEngine(args.cover, args.width, args.height, args.spine_width)
@@ -49,7 +49,7 @@ def main():
         title=args.title,
         description=args.description,
         author=args.author,
-        font_family=font_family,  # ✅ This is now Pango-compatible
+        font_family=args.font_family,  # ✅ Pango will use this family name
         title_font_size=args.title_size,
         desc_font_size=args.desc_size,
         spine_font_size=args.spine_size,
