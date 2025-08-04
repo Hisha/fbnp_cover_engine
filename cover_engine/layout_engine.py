@@ -1,6 +1,7 @@
 from PIL import Image, ImageDraw
 from text_renderer import render_text
 
+
 class CoverLayoutEngine:
     def __init__(self, cover_image_path, final_width, final_height, spine_width, debug=False):
         self.cover = Image.open(cover_image_path).convert("RGBA")
@@ -59,27 +60,28 @@ class CoverLayoutEngine:
                             spine_x + spine_box_width, spine_y + spine_box_height],
                            outline=(255, 0, 0, 255), width=5)
 
-        # === Render Title ===
+        # === Render Title (Center in front safe zone) ===
         title_img = self._render_scaled_text(title, font_family, title_font_size, title_color,
                                              front_box, "center", "middle", bold=True, add_bg=add_bg)
-        self.cover.paste(title_img, (front_safe_x, front_safe_y), title_img)
 
-        # === Render Description ===
+        title_x = front_safe_x + (front_safe_width - title_img.width) // 2
+        title_y = front_safe_y + ((front_safe_height * 0.3) - title_img.height) // 2
+        self.cover.paste(title_img, (title_x, int(title_y)), title_img)
+
+        # === Render Description (Align left but center vertically in 50% top block) ===
         desc_img = self._render_scaled_text(description, font_family, desc_font_size, desc_color,
                                             back_box, "left", "top", spacing=line_spacing, add_bg=add_bg)
-        self.cover.paste(desc_img, (back_safe_x, back_safe_y), desc_img)
+
+        desc_x = back_safe_x
+        desc_y = back_safe_y + ((back_safe_height * 0.5) - desc_img.height) // 2
+        self.cover.paste(desc_img, (desc_x, int(desc_y)), desc_img)
 
         # === Render Spine ===
         spine_text = f"{title} • {author}" if author else title
-
-        # Use rotated dimensions for scaling but render normally first
         rotated_box = (spine_box_height, spine_box_width)
-
         spine_img = self._render_scaled_text(spine_text, font_family, spine_font_size, title_color,
-                                             rotated_box, "center", "middle",
-                                             rotated=True, italic=True, add_bg=add_bg)
+                                             rotated_box, "center", "middle", rotated=True, italic=True, add_bg=add_bg)
 
-        # Compute actual safe zone for spine (centered after rotation)
         spine_x = (self.final_width // 2) - (spine_img.width // 2)
         spine_y = (self.final_height // 2) - (spine_img.height // 2)
         self.cover.paste(spine_img, (spine_x, spine_y), spine_img)
