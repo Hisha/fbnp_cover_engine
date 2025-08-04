@@ -32,10 +32,12 @@ def main():
     parser.add_argument("--height", type=int, required=True, help="Final cover height in pixels")
     parser.add_argument("--spine_width", type=int, required=True, help="Spine width in pixels")
 
-    # === Optional Features ===
+    # === Optional Styling Features ===
     parser.add_argument("--add_bg_box", action="store_true", help="Add semi-transparent white box behind text")
     parser.add_argument("--line_spacing", type=int, default=8, help="Line spacing for description text (in px)")
     parser.add_argument("--debug", action="store_true", help="Draw debug rectangles for safe zones")
+    parser.add_argument("--gradient", action="store_true", help="Add gradient overlay behind text areas")
+    parser.add_argument("--shadow", action="store_true", help="Add text shadow for readability")
 
     args = parser.parse_args()
 
@@ -74,7 +76,8 @@ def main():
     # === Apply text ===
     engine = CoverLayoutEngine(args.cover, args.width, args.height, args.spine_width, debug=args.debug)
     print("🔍 Applying text to cover...")
-    final_cover = engine.add_text(
+
+    engine.add_text(
         title=args.title,
         description=args.description,
         author=args.author,
@@ -85,7 +88,9 @@ def main():
         title_color=title_color,
         desc_color=desc_color,
         add_bg=args.add_bg_box,
-        line_spacing=args.line_spacing
+        line_spacing=args.line_spacing,
+        gradient_bg=args.gradient,
+        text_shadow=args.shadow
     )
 
     engine.save(args.output)
