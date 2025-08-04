@@ -57,11 +57,12 @@ def render_text(text, font_family, font_size, color, box_size, align="left"):
 
     layout = pangocairocffi.create_layout(context)
 
-    # ✅ Create font description
+    # ✅ Create font description properly
     font_desc = pango.FontDescription()
-    font_desc.set_family_static(font_family)  # static = no copy needed
-    font_desc.set_size(int(font_size * pango.SCALE))  # convert to Pango units
+    font_desc.set_family(font_family)
+    font_desc.set_size(int(font_size * pango.SCALE))  # Convert points to Pango units
     layout.set_font_description(font_desc)
+
     layout.set_text(text)
 
     # ✅ Alignment
