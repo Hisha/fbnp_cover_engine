@@ -24,23 +24,17 @@ def render_text(text, font_family, font_size, color, box_size, align="left", val
     """
     Render text with:
     - Word wrapping
-    - Hyphenation for long words
-    - Horizontal and vertical alignment
-    - Truncates text if it cannot fit after wrapping
+    - Horizontal + vertical alignment
     """
     width, height = box_size
-
-    # Create Cairo surface
     surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, width, height)
     context = cairo.Context(surface)
 
-    # Pango layout
     layout = PangoCairo.create_layout(context)
-    layout.set_width(width * Pango.SCALE)  # Enable wrapping
-    layout.set_wrap(Pango.WrapMode.WORD_CHAR)  # Wrap on word/character boundaries
+    layout.set_width(width * Pango.SCALE)
+    layout.set_wrap(Pango.WrapMode.WORD_CHAR)
     layout.set_text(text, -1)
 
-    # Font
     font_desc = Pango.FontDescription()
     font_desc.set_family(font_family)
     font_desc.set_size(font_size * Pango.SCALE)
@@ -54,12 +48,12 @@ def render_text(text, font_family, font_size, color, box_size, align="left", val
     else:
         layout.set_alignment(Pango.Alignment.LEFT)
 
-    # Calculate layout size
+    # Measure text
     ink_rect, logical_rect = layout.get_extents()
     text_width = logical_rect.width // Pango.SCALE
     text_height = logical_rect.height // Pango.SCALE
 
-    # Vertical alignment offset
+    # Vertical alignment
     if valign == "middle":
         y_offset = max((height - text_height) // 2, 0)
     elif valign == "bottom":
@@ -67,17 +61,16 @@ def render_text(text, font_family, font_size, color, box_size, align="left", val
     else:
         y_offset = 0
 
-    # Apply color and render
-    context.set_source_rgba(color[0] / 255, color[1] / 255, color[2] / 255, 1)
+    # Draw text
+    context.set_source_rgba(color[0]/255, color[1]/255, color[2]/255, 1)
     context.move_to(0, y_offset)
     PangoCairo.show_layout(context, layout)
 
-    # Convert to PIL Image
     buf = surface.get_data()
     img = Image.frombuffer("RGBA", (width, height), buf, "raw", "BGRA", 0, 1)
-    return img
+    return img, text_width, text_height  # Return image + size for fitting logic
 
 
 def render_rotated_text(text, font_family, font_size, color, box_size, angle=90):
-    img = render_text(text, font_family, font_size, color, box_size, align="center", valign="middle")
+    img, _, _ = render_text(text, font_family, font_size, color, box_size, align="center", valign="middle")
     return img.rotate(angle, expand=True)
