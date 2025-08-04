@@ -11,11 +11,13 @@ from PIL import Image
 FONTS_DIR = os.path.expanduser("~/.fbnp_cover_engine/fonts")
 os.makedirs(FONTS_DIR, exist_ok=True)
 
+
 def verify_or_download_font(font_family):
     """
     Check if font is installed system-wide; if not, download from Google Fonts.
+    Refresh font cache after download.
     """
-    # Check system font availability
+    # Check system font availability first
     try:
         result = subprocess.run(["fc-list", font_family], capture_output=True, text=True)
         if result.stdout.strip():
@@ -26,9 +28,10 @@ def verify_or_download_font(font_family):
 
     # Try Google Fonts download
     print(f"🔍 Font '{font_family}' not found. Attempting Google Fonts download...")
-    normalized = font_family.lower().replace(" ", "")
-    font_url = f"https://github.com/google/fonts/raw/main/ofl/{normalized}/{normalized}-regular.ttf"
-    font_path = os.path.join(FONTS_DIR, f"{normalized}.ttf")
+    folder_name = font_family.lower().replace(" ", "")
+    file_name = font_family.replace(" ", "") + "-Regular.ttf"  # Example: Lobster → Lobster-Regular.ttf
+    font_url = f"https://github.com/google/fonts/raw/main/ofl/{folder_name}/{file_name}"
+    font_path = os.path.join(FONTS_DIR, file_name)
 
     try:
         r = requests.get(font_url, timeout=15)
@@ -36,7 +39,7 @@ def verify_or_download_font(font_family):
             with open(font_path, "wb") as f:
                 f.write(r.content)
             print(f"✅ Downloaded font '{font_family}' to {font_path}")
-            # Update font cache so Pango can use it
+            # Refresh font cache
             subprocess.run(["fc-cache", "-f", FONTS_DIR])
             return font_family
         else:
@@ -44,7 +47,7 @@ def verify_or_download_font(font_family):
     except Exception as e:
         print(f"⚠️ Font download error: {e}. Using default font.")
 
-    return "Sans"  # Fallback if download fails
+    return "DejaVu Serif"  # Safe fallback
 
 
 def render_text(text, font_family, font_size, color, box_size, align="left", valign="top"):
