@@ -1,7 +1,12 @@
 import argparse
+import sys
 from layout_engine import CoverLayoutEngine
 from text_renderer import verify_font_available
 
+# === Character Limits (hardcoded) ===
+TITLE_MAX_CHARS = 70
+DESC_MAX_CHARS = 400
+SPINE_MAX_CHARS = 80
 
 def main():
     parser = argparse.ArgumentParser(description="FBNP Cover Text Renderer CLI")
@@ -28,6 +33,20 @@ def main():
 
     args = parser.parse_args()
 
+    # === Validate character limits ===
+    if len(args.title) > TITLE_MAX_CHARS:
+        print(f"❌ ERROR: Title exceeds {TITLE_MAX_CHARS} characters. Current length: {len(args.title)}")
+        sys.exit(1)
+
+    if len(args.description) > DESC_MAX_CHARS:
+        print(f"❌ ERROR: Description exceeds {DESC_MAX_CHARS} characters. Current length: {len(args.description)}")
+        sys.exit(1)
+
+    spine_text = f"{args.title} • {args.author}" if args.author else args.title
+    if len(spine_text) > SPINE_MAX_CHARS:
+        print(f"❌ ERROR: Spine text exceeds {SPINE_MAX_CHARS} characters. Current length: {len(spine_text)}")
+        sys.exit(1)
+
     # === Convert colors ===
     def hex_to_rgb(hex_color):
         hex_color = hex_color.lstrip('#')
@@ -42,7 +61,9 @@ def main():
 
     # === Print safe guidelines ===
     print("\n📏 **Character Limit Guidelines**")
-    print("   Title: ~70 chars max, Description: ~400 chars max, Spine: ~80 chars max\n")
+    print(f"   Title: {TITLE_MAX_CHARS} chars max")
+    print(f"   Description: {DESC_MAX_CHARS} chars max")
+    print(f"   Spine: {SPINE_MAX_CHARS} chars max\n")
 
     # === Apply text ===
     engine = CoverLayoutEngine(args.cover, args.width, args.height, args.spine_width)
