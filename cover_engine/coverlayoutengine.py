@@ -1,6 +1,6 @@
 import argparse
 from layout_engine import CoverLayoutEngine
-from text_renderer import verify_font_available  # ✅ No downloads, just verify
+from text_renderer import verify_font_available
 
 
 def main():
@@ -14,7 +14,7 @@ def main():
     parser.add_argument("--description", type=str, required=True, help="Back cover description text")
     parser.add_argument("--author", type=str, default="", help="Author name")
 
-    parser.add_argument("--font_family", type=str, required=True, help="Font family (must be installed, e.g., Arial)")
+    parser.add_argument("--font_family", type=str, required=True, help="Font family (must be installed)")
     parser.add_argument("--title_size", type=int, default=96, help="Font size for title text")
     parser.add_argument("--desc_size", type=int, default=48, help="Font size for description text")
     parser.add_argument("--spine_size", type=int, default=64, help="Font size for spine text")
@@ -28,7 +28,7 @@ def main():
 
     args = parser.parse_args()
 
-    # === Convert colors from hex to RGB ===
+    # === Convert colors ===
     def hex_to_rgb(hex_color):
         hex_color = hex_color.lstrip('#')
         return tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
@@ -40,16 +40,18 @@ def main():
     verify_font_available(args.font_family)
     print(f"✅ Font '{args.font_family}' is available.")
 
-    # === Initialize engine ===
-    engine = CoverLayoutEngine(args.cover, args.width, args.height, args.spine_width)
+    # === Print safe guidelines ===
+    print("\n📏 **Character Limit Guidelines**")
+    print("   Title: ~70 chars max, Description: ~400 chars max, Spine: ~80 chars max\n")
 
     # === Apply text ===
+    engine = CoverLayoutEngine(args.cover, args.width, args.height, args.spine_width)
     print("🔍 Applying text to cover...")
     final_cover = engine.add_text(
         title=args.title,
         description=args.description,
         author=args.author,
-        font_family=args.font_family,  # ✅ Pango will use this family name
+        font_family=args.font_family,
         title_font_size=args.title_size,
         desc_font_size=args.desc_size,
         spine_font_size=args.spine_size,
@@ -57,7 +59,6 @@ def main():
         desc_color=desc_color
     )
 
-    # === Save final cover ===
     engine.save(args.output)
     print(f"✅ Final cover saved at: {args.output}")
 
