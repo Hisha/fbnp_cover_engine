@@ -2,37 +2,32 @@ import os
 import requests
 import pangocairocffi
 import cairocffi as cairo
+import pangocffi as pango
 from pangocffi import FontDescription
 from PIL import Image
-import io
-import subprocess
 
 FONTS_DIR = os.path.expanduser("~/.fbnp_cover_engine/fonts")
 os.makedirs(FONTS_DIR, exist_ok=True)
 
-
 def resolve_font(font_family):
     """
-    Ensure the requested font is available locally or system-wide.
-    If not, download from Google Fonts.
+    Ensure the requested font is available locally.
+    If not, attempt to download from Google Fonts and return its path.
     """
     normalized = font_family.lower().replace(" ", "")
     font_path = os.path.join(FONTS_DIR, f"{normalized}.ttf")
 
-    # Check if already downloaded
     if os.path.exists(font_path):
         return font_family
 
-    # Check if available system-wide
     try:
+        import subprocess
         result = subprocess.run(["fc-list", font_family], capture_output=True, text=True)
         if result.stdout.strip():
-            print(f"✅ Font '{font_family}' found on system.")
             return font_family
     except FileNotFoundError:
         pass
 
-    # Attempt to download from Google Fonts
     print(f"🔍 Font '{font_family}' not found locally. Downloading from Google Fonts...")
     try:
         url = f"https://github.com/google/fonts/raw/main/ofl/{normalized}/{normalized}-regular.ttf"
@@ -42,13 +37,10 @@ def resolve_font(font_family):
                 f.write(r.content)
             print(f"✅ Font downloaded and saved to {font_path}")
             return font_family
-        else:
-            raise Exception(f"Font download failed (status {r.status_code})")
     except Exception as e:
         print(f"⚠️ Failed to download font '{font_family}': {e}")
         print("➡️ Falling back to default font: Arial")
         return "Arial"
-
 
 def render_text(text, font_family, font_size, color, box_size, align="left"):
     width, height = box_size
@@ -57,13 +49,13 @@ def render_text(text, font_family, font_size, color, box_size, align="left"):
 
     layout = pangocairocffi.create_layout(context)
 
-    # ✅ Create font description properly
-    font_desc = FontDescription.from_string(f"{font_family} {font_size}")
+    # ✅ Build font description using safe API
+    font_desc = FontDescription()
+    font_desc.set_family(font_family)
+    font_desc.set_size(int(font_size * pango.SCALE))  # convert points to Pango units
     layout.set_font_description(font_desc)
-
     layout.set_text(text)
 
-    # ✅ Alignment
     if align == "center":
         layout.set_alignment(pango.Alignment.CENTER)
     elif align == "right":
@@ -71,11 +63,9 @@ def render_text(text, font_family, font_size, color, box_size, align="left"):
     else:
         layout.set_alignment(pango.Alignment.LEFT)
 
-    # ✅ Color
-    context.set_source_rgb(color[0] / 255, color[1] / 255, color[2] / 255)
+    context.set_source_rgb(color[0]/255, color[1]/255, color[2]/255)
     pangocairocffi.show_layout(context, layout)
 
-    # ✅ Convert Cairo surface to PIL Image
     buf = surface.get_data()
     img = Image.frombuffer("RGBA", (width, height), buf, "raw", "BGRA", 0, 1)
     return img
