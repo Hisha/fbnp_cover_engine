@@ -2,6 +2,7 @@ from PIL import Image, ImageDraw
 from text_renderer import render_text
 import math
 
+
 class CoverLayoutEngine:
     def __init__(self, cover_image_path, final_width, final_height, spine_width, debug=False):
         self.cover = Image.open(cover_image_path).convert("RGBA")
@@ -15,6 +16,10 @@ class CoverLayoutEngine:
                  font_family, title_font_size, desc_font_size, spine_font_size,
                  title_color, desc_color,
                  add_bg=False, line_spacing=8, gradient_bg=True, text_shadow=True):
+        """
+        Add title, description, and spine text to the cover image with advanced styling options.
+        """
+
         # === Safe Zones ===
         bleed = int(0.125 * self.dpi)
         margin = int(0.25 * self.dpi)
@@ -56,29 +61,57 @@ class CoverLayoutEngine:
                             spine_x + spine_box_width, spine_y + spine_box_height],
                            outline=(255, 0, 0, 255), width=5)
 
-        # === Apply gradient if enabled ===
+        # === Optional Gradient Bars ===
         if gradient_bg:
-            self._add_gradient_bar((front_safe_x, front_safe_y, front_safe_x + front_safe_width, front_safe_y + front_box[1]))
-            self._add_gradient_bar((back_safe_x, back_safe_y, back_safe_x + back_safe_width, back_safe_y + back_box[1]))
+            self._add_gradient_bar((front_safe_x, front_safe_y,
+                                    front_safe_x + front_safe_width, front_safe_y + front_box[1]))
+            self._add_gradient_bar((back_safe_x, back_safe_y,
+                                    back_safe_x + back_safe_width, back_safe_y + back_box[1]))
 
-        # === Render Title ===
-        title_img = self._render_styled_text(title, font_family, title_font_size, title_color,
-                                             front_box, "center", "middle",
-                                             bold=True, shadow=text_shadow, add_bg=add_bg)
+        # === Render Title (Front Cover) ===
+        title_img = self._render_styled_text(
+            text=title,
+            font_family=font_family,
+            font_size=title_font_size,
+            color=title_color,
+            box_size=front_box,
+            align="center", valign="middle",
+            bold=True,
+            shadow=text_shadow,
+            add_bg=add_bg,
+            letter_spacing=1
+        )
         self.cover.paste(title_img, (front_safe_x, front_safe_y), title_img)
 
-        # === Render Description ===
-        desc_img = self._render_styled_text(description, "DejaVu Serif", desc_font_size, desc_color,
-                                            back_box, "left", "top",
-                                            spacing=line_spacing, shadow=text_shadow, add_bg=add_bg)
+        # === Render Description (Back Cover) ===
+        desc_img = self._render_styled_text(
+            text=description,
+            font_family="DejaVu Serif",  # ✅ More readable for body text
+            font_size=desc_font_size,
+            color=desc_color,
+            box_size=back_box,
+            align="left", valign="top",
+            spacing=line_spacing,
+            shadow=text_shadow,
+            add_bg=add_bg
+        )
         self.cover.paste(desc_img, (back_safe_x, back_safe_y), desc_img)
 
-        # === Render Spine ===
+        # === Render Spine Text ===
         spine_text = f"{title} • {author}" if author else title
-        spine_img = self._render_styled_text(spine_text, font_family, spine_font_size, title_color,
-                                             (spine_box_height, spine_box_width), "center", "middle",
-                                             rotated=True, italic=True, letter_spacing=1.5,
-                                             shadow=text_shadow, add_bg=add_bg)
+        spine_img = self._render_styled_text(
+            text=spine_text,
+            font_family=font_family,
+            font_size=spine_font_size,
+            color=title_color,
+            box_size=(spine_box_height, spine_box_width),  # Swapped for rotation
+            align="center", valign="middle",
+            rotated=True,
+            italic=True,
+            shadow=text_shadow,
+            add_bg=add_bg,
+            letter_spacing=2
+        )
         spine_x = (self.final_width // 2) - (spine_img.width // 2)
         spine_y = (self.final_height // 2) - (spine_img.height // 2)
         self.cover.paste(spine_img, (spine_x, spine_y), spine_img)
@@ -88,10 +121,22 @@ class CoverLayoutEngine:
     def _render_styled_text(self, text, font_family, font_size, color, box_size,
                             align, valign, rotated=False, bold=False, italic=False,
                             spacing=0, letter_spacing=0, shadow=False, add_bg=False):
-        img = render_text(text, font_family, font_size, color, box_size,
-                          align, valign, spacing=spacing, bold=bold,
-                          italic=italic, add_bg=add_bg, shadow=shadow,
-                          letter_spacing=letter_spacing)
+        img = render_text(
+            text=text,
+            font_family=font_family,
+            font_size=font_size,
+            color=color,
+            box_size=box_size,
+            align=align,
+            valign=valign,
+            spacing=spacing,
+            bold=bold,
+            italic=italic,
+            add_bg=add_bg,
+            gradient_bg=False,  # Gradient handled externally
+            letter_spacing=letter_spacing,
+            text_shadow=shadow
+        )
         if rotated:
             img = img.rotate(90, expand=True)
         return img
