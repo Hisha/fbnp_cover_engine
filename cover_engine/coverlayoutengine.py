@@ -31,6 +31,10 @@ def main():
     parser.add_argument("--height", type=int, required=True, help="Final cover height in pixels")
     parser.add_argument("--spine_width", type=int, required=True, help="Spine width in pixels")
 
+    # === Optional Features ===
+    parser.add_argument("--add_bg_box", action="store_true", help="Add semi-transparent white box behind text")
+    parser.add_argument("--line_spacing", type=int, default=8, help="Line spacing for description text (in px)")
+
     args = parser.parse_args()
 
     # === Validate character limits ===
@@ -77,7 +81,9 @@ def main():
         desc_font_size=args.desc_size,
         spine_font_size=args.spine_size,
         title_color=title_color,
-        desc_color=desc_color
+        desc_color=desc_color,
+        add_bg=args.add_bg_box,
+        line_spacing=args.line_spacing
     )
 
     engine.save(args.output)
