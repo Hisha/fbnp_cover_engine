@@ -1,7 +1,6 @@
 from PIL import Image, ImageDraw
 from text_renderer import render_text
 
-
 class CoverLayoutEngine:
     def __init__(self, cover_image_path, final_width, final_height, spine_width, debug=False):
         self.cover = Image.open(cover_image_path).convert("RGBA")
@@ -72,9 +71,13 @@ class CoverLayoutEngine:
 
         # === Render Spine ===
         spine_text = f"{title} • {author}" if author else title
+
+        # Use rotated dimensions for scaling but render normally first
+        rotated_box = (spine_box_height, spine_box_width)
+
         spine_img = self._render_scaled_text(spine_text, font_family, spine_font_size, title_color,
-                                             (spine_box_height, spine_box_width),  # swap dimensions for rotation
-                                             "center", "middle", rotated=True, italic=True, add_bg=add_bg)
+                                             rotated_box, "center", "middle",
+                                             rotated=True, italic=True, add_bg=add_bg)
 
         # Compute actual safe zone for spine (centered after rotation)
         spine_x = (self.final_width // 2) - (spine_img.width // 2)
