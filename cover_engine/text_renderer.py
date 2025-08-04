@@ -57,10 +57,10 @@ def render_text(text, font_family, font_size, color, box_size, align="left"):
 
     layout = pangocairocffi.create_layout(context)
 
-    # ✅ Correct way to set font
+    # ✅ Create font description
     font_desc = pango.FontDescription()
-    font_desc.set_family(font_family)
-    font_desc.set_size(font_size * pango.SCALE)  # Pango expects size in Pango units
+    font_desc.set_family_static(font_family)  # static = no copy needed
+    font_desc.set_size(int(font_size * pango.SCALE))  # convert to Pango units
     layout.set_font_description(font_desc)
     layout.set_text(text)
 
@@ -76,11 +76,10 @@ def render_text(text, font_family, font_size, color, box_size, align="left"):
     context.set_source_rgb(color[0] / 255, color[1] / 255, color[2] / 255)
     pangocairocffi.show_layout(context, layout)
 
-    # ✅ Convert to PIL Image
+    # ✅ Convert Cairo surface to PIL Image
     buf = surface.get_data()
     img = Image.frombuffer("RGBA", (width, height), buf, "raw", "BGRA", 0, 1)
     return img
-
 
 def render_rotated_text(text, font_family, font_size, color, box_size, angle=90):
     img = render_text(text, font_family, font_size, color, box_size)
