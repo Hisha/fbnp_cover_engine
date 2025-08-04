@@ -6,7 +6,6 @@ from gi.repository import Pango, PangoCairo
 import cairo
 from PIL import Image
 
-
 def verify_font_available(font_family):
     """
     Check if font is installed on the system.
@@ -19,12 +18,9 @@ def verify_font_available(font_family):
     except FileNotFoundError:
         raise RuntimeError("❌ 'fc-list' command not found. Install fontconfig to check fonts.")
 
-
 def render_text(text, font_family, font_size, color, box_size, align="left", valign="top"):
     """
-    Render text with:
-    - Word wrapping
-    - Horizontal + vertical alignment
+    Render text into a transparent image using Pango + Cairo.
     """
     width, height = box_size
     surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, width, height)
@@ -40,7 +36,6 @@ def render_text(text, font_family, font_size, color, box_size, align="left", val
     font_desc.set_size(font_size * Pango.SCALE)
     layout.set_font_description(font_desc)
 
-    # Horizontal alignment
     if align == "center":
         layout.set_alignment(Pango.Alignment.CENTER)
     elif align == "right":
@@ -48,12 +43,10 @@ def render_text(text, font_family, font_size, color, box_size, align="left", val
     else:
         layout.set_alignment(Pango.Alignment.LEFT)
 
-    # Measure text
     ink_rect, logical_rect = layout.get_extents()
     text_width = logical_rect.width // Pango.SCALE
     text_height = logical_rect.height // Pango.SCALE
 
-    # Vertical alignment
     if valign == "middle":
         y_offset = max((height - text_height) // 2, 0)
     elif valign == "bottom":
@@ -61,16 +54,14 @@ def render_text(text, font_family, font_size, color, box_size, align="left", val
     else:
         y_offset = 0
 
-    # Draw text
     context.set_source_rgba(color[0]/255, color[1]/255, color[2]/255, 1)
     context.move_to(0, y_offset)
     PangoCairo.show_layout(context, layout)
 
     buf = surface.get_data()
     img = Image.frombuffer("RGBA", (width, height), buf, "raw", "BGRA", 0, 1)
-    return img, text_width, text_height  # Return image + size for fitting logic
-
+    return img
 
 def render_rotated_text(text, font_family, font_size, color, box_size, angle=90):
-    img, _, _ = render_text(text, font_family, font_size, color, box_size, align="center", valign="middle")
+    img = render_text(text, font_family, font_size, color, box_size, align="center", valign="middle")
     return img.rotate(angle, expand=True)
