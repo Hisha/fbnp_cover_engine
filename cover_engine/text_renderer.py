@@ -2,7 +2,7 @@ import os
 import requests
 import pangocairocffi
 import cairocffi as cairo
-import pangocffi as pango
+from pangocffi import FontDescription
 from PIL import Image
 import io
 import subprocess
@@ -58,9 +58,7 @@ def render_text(text, font_family, font_size, color, box_size, align="left"):
     layout = pangocairocffi.create_layout(context)
 
     # ✅ Create font description properly
-    font_desc = pango.FontDescription()
-    font_desc.set_family(font_family)
-    font_desc.set_size(int(font_size * pango.SCALE))  # Convert points to Pango units
+    font_desc = FontDescription.from_string(f"{font_family} {font_size}")
     layout.set_font_description(font_desc)
 
     layout.set_text(text)
