@@ -3,10 +3,11 @@ import sys
 from layout_engine import CoverLayoutEngine
 from text_renderer import verify_font_available
 
-# === Character Limits (hardcoded) ===
+# === Character Limits (Hardcoded) ===
 TITLE_MAX_CHARS = 70
 DESC_MAX_CHARS = 400
 SPINE_MAX_CHARS = 80
+
 
 def main():
     parser = argparse.ArgumentParser(description="FBNP Cover Text Renderer CLI")
