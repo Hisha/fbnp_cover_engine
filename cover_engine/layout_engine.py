@@ -24,21 +24,21 @@ class CoverLayoutEngine:
         back_width = (self.final_width - self.spine_width) // 2
         front_width = back_width
 
-        # Front safe zone (title top 30%)
-        front_safe_x = self.spine_width + bleed + margin
+        # ✅ Corrected Front Safe Zone Calculation
+        front_safe_x = back_width + self.spine_width + bleed + margin
         front_safe_y = bleed + margin
         front_safe_width = front_width - (bleed + margin + inner_padding)
         front_safe_height = self.final_height - (2 * bleed) - (2 * margin)
         front_box = (front_safe_width, int(front_safe_height * 0.3))
 
-        # Back safe zone (description top 50%)
+        # ✅ Back Safe Zone
         back_safe_x = bleed + margin
         back_safe_y = bleed + margin
         back_safe_width = back_width - (bleed + margin + inner_padding)
         back_safe_height = self.final_height - (2 * bleed) - (2 * margin)
         back_box = (back_safe_width, int(back_safe_height * 0.5))
 
-        # Spine safe zone
+        # ✅ Spine Safe Zone
         spine_box_width = int(self.spine_width * 0.9)
         spine_box_height = int(self.final_height * 0.8)
 
@@ -60,7 +60,7 @@ class CoverLayoutEngine:
                             spine_x + spine_box_width, spine_y + spine_box_height],
                            outline=(255, 0, 0, 255), width=5)
 
-        # === Render Title (Center in front safe zone) ===
+        # === Render Title (Centered in front safe zone) ===
         title_img = self._render_scaled_text(title, font_family, title_font_size, title_color,
                                              front_box, "center", "middle", bold=True, add_bg=add_bg)
 
@@ -68,7 +68,7 @@ class CoverLayoutEngine:
         title_y = front_safe_y + ((front_safe_height * 0.3) - title_img.height) // 2
         self.cover.paste(title_img, (title_x, int(title_y)), title_img)
 
-        # === Render Description (Align left but center vertically in 50% top block) ===
+        # === Render Description (Align left, vertically centered in back safe zone) ===
         desc_img = self._render_scaled_text(description, font_family, desc_font_size, desc_color,
                                             back_box, "left", "top", spacing=line_spacing, add_bg=add_bg)
 
@@ -78,7 +78,7 @@ class CoverLayoutEngine:
 
         # === Render Spine ===
         spine_text = f"{title} • {author}" if author else title
-        rotated_box = (spine_box_height, spine_box_width)
+        rotated_box = (spine_box_height, spine_box_width)  # swapped for rotation
         spine_img = self._render_scaled_text(spine_text, font_family, spine_font_size, title_color,
                                              rotated_box, "center", "middle", rotated=True, italic=True, add_bg=add_bg)
 
