@@ -54,6 +54,7 @@ def main():
     parser.add_argument("--gradient", action="store_true", help="Add gradient bars behind text")
     parser.add_argument("--shadow", action="store_true", help="Add text shadow for readability")
     parser.add_argument("--letter_spacing", type=float, default=0, help="Apply custom letter spacing")
+    parser.add_argument("--blur_bg", action="store_true", help="Blur background behind text areas")
     parser.add_argument("--professional", action="store_true", help="Enable all professional enhancements")
 
     args = parser.parse_args()
@@ -81,6 +82,7 @@ def main():
         args.gradient = True
         args.shadow = True
         args.add_bg_box = True
+        args.blur_bg = True
         if args.letter_spacing == 0:
             args.letter_spacing = 1.5  # Default professional spacing
         args.font_family = pick_font(PRO_TITLE_FONTS)
@@ -91,7 +93,7 @@ def main():
         print(f"   ✔ Body Font: {body_font}")
         print("   ✔ Gradient bars")
         print("   ✔ Shadows")
-        print("   ✔ Background boxes")
+        print("   ✔ Background blur")
         print(f"   ✔ Letter spacing: {args.letter_spacing}\n")
     else:
         body_font = args.font_family
@@ -105,7 +107,7 @@ def main():
     print("🎨 Applied Styling:")
     print(f"   Gradient: {args.gradient}")
     print(f"   Shadow: {args.shadow}")
-    print(f"   Background Box: {args.add_bg_box}")
+    print(f"   Blur Background: {args.blur_bg}")
     print(f"   Letter Spacing: {args.letter_spacing}")
     print(f"   Debug Mode: {args.debug}\n")
 
@@ -128,7 +130,8 @@ def main():
         gradient_bg=args.gradient,
         text_shadow=args.shadow,
         letter_spacing=args.letter_spacing,
-        body_font=body_font
+        body_font=body_font,
+        blur_bg=args.blur_bg
     )
 
     engine.save(args.output)
