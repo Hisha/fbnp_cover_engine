@@ -38,6 +38,8 @@ def main():
     parser.add_argument("--debug", action="store_true", help="Draw debug rectangles for safe zones")
     parser.add_argument("--gradient", action="store_true", help="Add gradient overlay behind text areas")
     parser.add_argument("--shadow", action="store_true", help="Add text shadow for readability")
+    parser.add_argument("--letter_spacing", type=float, default=0, help="Custom letter spacing (optional)")
+    parser.add_argument("--professional", action="store_true", help="Enable all pro settings for best quality")
 
     args = parser.parse_args()
 
@@ -67,11 +69,31 @@ def main():
     verify_font_available(args.font_family)
     print(f"✅ Font '{args.font_family}' is available.")
 
-    # === Print safe guidelines ===
+    # === Apply Professional Preset if enabled ===
+    if args.professional:
+        args.gradient = True
+        args.shadow = True
+        args.add_bg_box = True
+        if args.letter_spacing == 0:  # If user didn't override
+            args.letter_spacing = 1.2
+        print("\n✨ Professional Mode Enabled:")
+        print("   ✔ Gradient background")
+        print("   ✔ Text shadow")
+        print("   ✔ Background boxes")
+        print("   ✔ Letter spacing applied\n")
+
+    # === Print Applied Settings Summary ===
     print("\n📏 **Character Limit Guidelines**")
     print(f"   Title: {TITLE_MAX_CHARS} chars max")
     print(f"   Description: {DESC_MAX_CHARS} chars max")
     print(f"   Spine: {SPINE_MAX_CHARS} chars max\n")
+
+    print("🎨 **Applied Styling**")
+    print(f"   Gradient: {args.gradient}")
+    print(f"   Shadow: {args.shadow}")
+    print(f"   Background Box: {args.add_bg_box}")
+    print(f"   Letter Spacing: {args.letter_spacing}")
+    print(f"   Debug Mode: {args.debug}\n")
 
     # === Apply text ===
     engine = CoverLayoutEngine(args.cover, args.width, args.height, args.spine_width, debug=args.debug)
