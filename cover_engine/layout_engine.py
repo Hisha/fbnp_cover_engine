@@ -68,14 +68,14 @@ class CoverLayoutEngine:
         # === ACCENT COLOR FOR DECOR ===
         accent_color = self._extract_dominant_color()
 
-        # === TITLE HANDLING ===
+        # === SPLIT TITLE ===
         split_title = self._split_title(title)
         title_text = "\n".join(split_title)
 
         # === RENDER TITLE ===
         title_img = render_text(title_text, font_family, title_font_size, title_color,
                                 front_box, align="center", valign="middle",
-                                bold=True, add_bg=add_bg, letter_spacing=letter_spacing,
+                                bold=True, add_bg=False, letter_spacing=letter_spacing,
                                 text_shadow=text_shadow)
         self.cover.paste(title_img, (front_safe_x, front_safe_y), title_img)
 
@@ -86,7 +86,7 @@ class CoverLayoutEngine:
         # === RENDER DESCRIPTION ===
         desc_img = render_text(description, body_font, desc_font_size, desc_color,
                                back_box, align="left", valign="top",
-                               spacing=line_spacing, add_bg=add_bg, text_shadow=text_shadow)
+                               spacing=line_spacing, add_bg=False, text_shadow=text_shadow)
         self.cover.paste(desc_img, (back_safe_x, back_safe_y), desc_img)
 
         # === RENDER SPINE ===
@@ -94,7 +94,7 @@ class CoverLayoutEngine:
         spine_img = render_text(spine_text, font_family, spine_font_size, title_color,
                                 (spine_box_height, spine_box_width),
                                 align="center", valign="middle", italic=True,
-                                rotated=True, letter_spacing=2, text_shadow=text_shadow)
+                                rotated=True, letter_spacing=2, text_shadow=text_shadow, small_caps=True)
         spine_x = (self.final_width // 2) - (spine_img.width // 2)
         spine_y = (self.final_height // 2) - (spine_img.height // 2)
         self.cover.paste(spine_img, (spine_x, spine_y), spine_img)
