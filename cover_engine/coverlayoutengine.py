@@ -8,6 +8,18 @@ TITLE_MAX_CHARS = 70
 DESC_MAX_CHARS = 400
 SPINE_MAX_CHARS = 80
 
+# === Preferred Fonts for Professional Mode ===
+PRO_TITLE_FONTS = ["Playfair Display", "EB Garamond", "Libre Baskerville"]
+PRO_BODY_FONTS = ["Merriweather", "Lora", "Roboto Slab", "DejaVu Serif"]
+
+def pick_font(preferred_fonts):
+    for font in preferred_fonts:
+        try:
+            verify_font_available(font)
+            return font
+        except ValueError:
+            continue
+    return "DejaVu Serif"  # Fallback if none are installed
 
 def main():
     parser = argparse.ArgumentParser(description="FBNP Cover Text Renderer CLI")
@@ -20,7 +32,7 @@ def main():
     parser.add_argument("--description", type=str, required=True, help="Back cover description text")
     parser.add_argument("--author", type=str, default="", help="Author name")
 
-    parser.add_argument("--font_family", type=str, required=True, help="Font family (must be installed)")
+    parser.add_argument("--font_family", type=str, default="DejaVu Serif", help="Font family (will be overridden in professional mode)")
     parser.add_argument("--title_size", type=int, default=96, help="Font size for title text")
     parser.add_argument("--desc_size", type=int, default=48, help="Font size for description text")
     parser.add_argument("--spine_size", type=int, default=64, help="Font size for spine text")
@@ -65,39 +77,32 @@ def main():
     title_color = hex_to_rgb(args.title_color)
     desc_color = hex_to_rgb(args.desc_color)
 
-    # === Verify font availability ===
-    verify_font_available(args.font_family)
-    print(f"✅ Font '{args.font_family}' is available.")
-
-    # === Apply Professional Preset if enabled ===
+    # === Apply Professional Preset ===
     if args.professional:
         args.gradient = True
         args.shadow = True
         args.add_bg_box = True
-        if args.letter_spacing == 0:  # If user didn't override
-            args.letter_spacing = 1.2
+        if args.letter_spacing == 0:
+            args.letter_spacing = 1.5
+        args.font_family = pick_font(PRO_TITLE_FONTS)
+        body_font = pick_font(PRO_BODY_FONTS)
         print("\n✨ Professional Mode Enabled:")
-        print("   ✔ Gradient background")
-        print("   ✔ Text shadow")
-        print("   ✔ Background boxes")
-        print("   ✔ Letter spacing applied\n")
+        print(f"   ✔ Title Font: {args.font_family}")
+        print(f"   ✔ Body Font: {body_font}")
+        print(f"   ✔ Gradient + Shadow + BG Boxes")
+        print(f"   ✔ Letter Spacing: {args.letter_spacing}\n")
+    else:
+        body_font = args.font_family
 
-    # === Print Applied Settings Summary ===
-    print("\n📏 **Character Limit Guidelines**")
+    # === Print Styling Summary ===
+    print("\n📏 Character Limits:")
     print(f"   Title: {TITLE_MAX_CHARS} chars max")
     print(f"   Description: {DESC_MAX_CHARS} chars max")
     print(f"   Spine: {SPINE_MAX_CHARS} chars max\n")
 
-    print("🎨 **Applied Styling**")
-    print(f"   Gradient: {args.gradient}")
-    print(f"   Shadow: {args.shadow}")
-    print(f"   Background Box: {args.add_bg_box}")
-    print(f"   Letter Spacing: {args.letter_spacing}")
-    print(f"   Debug Mode: {args.debug}\n")
-
-    # === Apply text ===
+    # === Render ===
     engine = CoverLayoutEngine(args.cover, args.width, args.height, args.spine_width, debug=args.debug)
-    print("🔍 Applying text to cover...")
+    print("🔍 Rendering cover...")
 
     engine.add_text(
         title=args.title,
@@ -112,7 +117,9 @@ def main():
         add_bg=args.add_bg_box,
         line_spacing=args.line_spacing,
         gradient_bg=args.gradient,
-        text_shadow=args.shadow
+        text_shadow=args.shadow,
+        letter_spacing=args.letter_spacing,
+        body_font=body_font
     )
 
     engine.save(args.output)
