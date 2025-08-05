@@ -3,12 +3,12 @@ import sys
 from layout_engine import CoverLayoutEngine
 from text_renderer import verify_font_available
 
-# === Character Limits (Hardcoded) ===
+# === Character Limits ===
 TITLE_MAX_CHARS = 70
 DESC_MAX_CHARS = 400
 SPINE_MAX_CHARS = 80
 
-# === Preferred Fonts for Professional Mode ===
+# === Preferred Fonts for Pro Mode ===
 PRO_TITLE_FONTS = ["Playfair Display", "EB Garamond", "Libre Baskerville"]
 PRO_BODY_FONTS = ["Merriweather", "Lora", "Roboto Slab", "DejaVu Serif"]
 
@@ -19,7 +19,7 @@ def pick_font(preferred_fonts):
             return font
         except ValueError:
             continue
-    return "DejaVu Serif"  # Fallback if none are installed
+    return "DejaVu Serif"  # Default fallback
 
 def main():
     parser = argparse.ArgumentParser(description="FBNP Cover Text Renderer CLI")
@@ -32,44 +32,43 @@ def main():
     parser.add_argument("--description", type=str, required=True, help="Back cover description text")
     parser.add_argument("--author", type=str, default="", help="Author name")
 
-    parser.add_argument("--font_family", type=str, default="DejaVu Serif", help="Font family (will be overridden in professional mode)")
-    parser.add_argument("--title_size", type=int, default=96, help="Font size for title text")
-    parser.add_argument("--desc_size", type=int, default=48, help="Font size for description text")
+    # Fonts & Sizes
+    parser.add_argument("--font_family", type=str, default="DejaVu Serif", help="Font for title (overridden in professional mode)")
+    parser.add_argument("--title_size", type=int, default=96, help="Font size for title")
+    parser.add_argument("--desc_size", type=int, default=48, help="Font size for description")
     parser.add_argument("--spine_size", type=int, default=64, help="Font size for spine text")
 
+    # Colors
     parser.add_argument("--title_color", type=str, default="#000000", help="Hex color for title text")
     parser.add_argument("--desc_color", type=str, default="#000000", help="Hex color for description text")
 
-    parser.add_argument("--width", type=int, required=True, help="Final cover width in pixels")
-    parser.add_argument("--height", type=int, required=True, help="Final cover height in pixels")
-    parser.add_argument("--spine_width", type=int, required=True, help="Spine width in pixels")
+    # Dimensions
+    parser.add_argument("--width", type=int, required=True, help="Full cover width (pixels)")
+    parser.add_argument("--height", type=int, required=True, help="Full cover height (pixels)")
+    parser.add_argument("--spine_width", type=int, required=True, help="Spine width (pixels)")
 
-    # === Optional Styling Features ===
-    parser.add_argument("--add_bg_box", action="store_true", help="Add semi-transparent white box behind text")
-    parser.add_argument("--line_spacing", type=int, default=8, help="Line spacing for description text (in px)")
+    # Styling Options
+    parser.add_argument("--add_bg_box", action="store_true", help="Add semi-transparent white background behind text")
+    parser.add_argument("--line_spacing", type=int, default=8, help="Line spacing for description")
     parser.add_argument("--debug", action="store_true", help="Draw debug rectangles for safe zones")
-    parser.add_argument("--gradient", action="store_true", help="Add gradient overlay behind text areas")
+    parser.add_argument("--gradient", action="store_true", help="Add gradient bars behind text")
     parser.add_argument("--shadow", action="store_true", help="Add text shadow for readability")
-    parser.add_argument("--letter_spacing", type=float, default=0, help="Custom letter spacing (optional)")
-    parser.add_argument("--professional", action="store_true", help="Enable all pro settings for best quality")
+    parser.add_argument("--letter_spacing", type=float, default=0, help="Apply custom letter spacing")
+    parser.add_argument("--professional", action="store_true", help="Enable all professional enhancements")
 
     args = parser.parse_args()
 
-    # === Validate character limits ===
+    # === Validate Text Length ===
     if len(args.title) > TITLE_MAX_CHARS:
-        print(f"❌ ERROR: Title exceeds {TITLE_MAX_CHARS} characters. Current length: {len(args.title)}")
-        sys.exit(1)
-
+        sys.exit(f"❌ ERROR: Title exceeds {TITLE_MAX_CHARS} characters")
     if len(args.description) > DESC_MAX_CHARS:
-        print(f"❌ ERROR: Description exceeds {DESC_MAX_CHARS} characters. Current length: {len(args.description)}")
-        sys.exit(1)
+        sys.exit(f"❌ ERROR: Description exceeds {DESC_MAX_CHARS} characters")
 
     spine_text = f"{args.title} • {args.author}" if args.author else args.title
     if len(spine_text) > SPINE_MAX_CHARS:
-        print(f"❌ ERROR: Spine text exceeds {SPINE_MAX_CHARS} characters. Current length: {len(spine_text)}")
-        sys.exit(1)
+        sys.exit(f"❌ ERROR: Spine text exceeds {SPINE_MAX_CHARS} characters")
 
-    # === Convert colors ===
+    # === Convert Colors ===
     def hex_to_rgb(hex_color):
         hex_color = hex_color.lstrip('#')
         return tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
@@ -77,30 +76,40 @@ def main():
     title_color = hex_to_rgb(args.title_color)
     desc_color = hex_to_rgb(args.desc_color)
 
-    # === Apply Professional Preset ===
+    # === Professional Mode ===
     if args.professional:
         args.gradient = True
         args.shadow = True
         args.add_bg_box = True
         if args.letter_spacing == 0:
-            args.letter_spacing = 1.5
+            args.letter_spacing = 1.5  # Default professional spacing
         args.font_family = pick_font(PRO_TITLE_FONTS)
         body_font = pick_font(PRO_BODY_FONTS)
+
         print("\n✨ Professional Mode Enabled:")
         print(f"   ✔ Title Font: {args.font_family}")
         print(f"   ✔ Body Font: {body_font}")
-        print(f"   ✔ Gradient + Shadow + BG Boxes")
-        print(f"   ✔ Letter Spacing: {args.letter_spacing}\n")
+        print("   ✔ Gradient bars")
+        print("   ✔ Shadows")
+        print("   ✔ Background boxes")
+        print(f"   ✔ Letter spacing: {args.letter_spacing}\n")
     else:
         body_font = args.font_family
 
-    # === Print Styling Summary ===
+    # === Show Summary ===
     print("\n📏 Character Limits:")
     print(f"   Title: {TITLE_MAX_CHARS} chars max")
     print(f"   Description: {DESC_MAX_CHARS} chars max")
     print(f"   Spine: {SPINE_MAX_CHARS} chars max\n")
 
-    # === Render ===
+    print("🎨 Applied Styling:")
+    print(f"   Gradient: {args.gradient}")
+    print(f"   Shadow: {args.shadow}")
+    print(f"   Background Box: {args.add_bg_box}")
+    print(f"   Letter Spacing: {args.letter_spacing}")
+    print(f"   Debug Mode: {args.debug}\n")
+
+    # === Render Cover ===
     engine = CoverLayoutEngine(args.cover, args.width, args.height, args.spine_width, debug=args.debug)
     print("🔍 Rendering cover...")
 
