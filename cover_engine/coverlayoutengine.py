@@ -3,136 +3,171 @@ import sys
 from layout_engine import CoverLayoutEngine
 from text_renderer import verify_font_available
 
-# === Character Limits ===
+# === Character Limits (hardcoded) ===
 TITLE_MAX_CHARS = 70
-DESC_MAX_CHARS = 400
+DESC_MAX_CHARS  = 400
 SPINE_MAX_CHARS = 80
 
-# === Preferred Fonts for Pro Mode ===
-PRO_TITLE_FONTS = ["Playfair Display", "EB Garamond", "Libre Baskerville"]
-PRO_BODY_FONTS = ["Merriweather", "Lora", "Roboto Slab", "DejaVu Serif"]
+# === Preferred font families per style (try in order; fall back gracefully) ===
+STYLE_PROFILES = {
+    "classic": {
+        "title_fonts": ["Playfair Display", "EB Garamond", "Libre Baskerville", "DejaVu Serif"],
+        "body_fonts":  ["Merriweather", "Lora", "Roboto Slab", "DejaVu Serif"],
+        "letter_spacing": 1.4,
+        "title_case": "title",
+        "underline": True,
+        "frame_border": True,
+        "gradient_opacity": 190,
+        "blur_radius": 8,
+        "shadow": True
+    },
+    "modern": {
+        "title_fonts": ["Montserrat", "Source Sans 3", "Inter", "DejaVu Sans"],
+        "body_fonts":  ["Source Serif 4", "Noto Serif", "Merriweather", "DejaVu Serif"],
+        "letter_spacing": 0.8,
+        "title_case": "sentence",
+        "underline": False,
+        "frame_border": False,
+        "gradient_opacity": 165,
+        "blur_radius": 6,
+        "shadow": True
+    },
+    "impact": {
+        "title_fonts": ["Oswald", "Bebas Neue", "League Gothic", "DejaVu Sans"],
+        "body_fonts":  ["Roboto Slab", "Merriweather", "Noto Serif", "DejaVu Serif"],
+        "letter_spacing": 1.0,
+        "title_case": "upper",
+        "underline": True,
+        "frame_border": True,
+        "gradient_opacity": 175,
+        "blur_radius": 10,
+        "shadow": True
+    },
+}
 
-
-def pick_font(preferred_fonts):
-    for font in preferred_fonts:
+def pick_first_installed(families):
+    """Return the first installed font family from a list."""
+    for fam in families:
         try:
-            verify_font_available(font)
-            return font
+            verify_font_available(fam)
+            return fam
         except ValueError:
             continue
-    return "DejaVu Serif"  # Fallback
+    # Last-resort fallbacks
+    return "DejaVu Serif"
 
+def hex_to_rgb(hex_color: str):
+    hex_color = hex_color.lstrip("#")
+    return tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
 
 def main():
     parser = argparse.ArgumentParser(description="FBNP Cover Text Renderer CLI")
 
-    # === Required Args ===
+    # Required
     parser.add_argument("--cover", type=str, required=True, help="Path to base cover image")
-    parser.add_argument("--output", type=str, default="final_cover.png", help="Output file name")
+    parser.add_argument("--output", type=str, default="final_cover.png", help="Output file")
 
     parser.add_argument("--title", type=str, required=True, help="Book title")
-    parser.add_argument("--subtitle", type=str, default="", help="Optional subtitle (front cover, under title)")
-    parser.add_argument("--description", type=str, required=True, help="Back cover description text")
+    parser.add_argument("--description", type=str, required=True, help="Back cover description")
     parser.add_argument("--author", type=str, default="", help="Author name")
 
-    # Fonts & Sizes
+    # Fonts & sizes
     parser.add_argument("--font_family", type=str, default="DejaVu Serif",
-                        help="Title font (is auto-picked in professional mode)")
-    parser.add_argument("--title_size", type=int, default=96, help="Font size for title")
-    parser.add_argument("--desc_size", type=int, default=48, help="Font size for description")
-    parser.add_argument("--spine_size", type=int, default=64, help="Font size for spine text")
+                        help="Title font (overridden in professional mode unless --style=custom)")
+    parser.add_argument("--title_size", type=int, default=96)
+    parser.add_argument("--desc_size", type=int, default=48)
+    parser.add_argument("--spine_size", type=int, default=64)
 
     # Colors
-    parser.add_argument("--title_color", type=str, default="#000000", help="Hex color for title/subtitle/spine")
-    parser.add_argument("--desc_color", type=str, default="#000000", help="Hex color for description")
+    parser.add_argument("--title_color", type=str, default="#000000")
+    parser.add_argument("--desc_color", type=str, default="#000000")
 
     # Dimensions
-    parser.add_argument("--width", type=int, required=True, help="Full cover width (pixels)")
-    parser.add_argument("--height", type=int, required=True, help="Full cover height (pixels)")
-    parser.add_argument("--spine_width", type=int, required=True, help="Spine width (pixels)")
+    parser.add_argument("--width", type=int, required=True)
+    parser.add_argument("--height", type=int, required=True)
+    parser.add_argument("--spine_width", type=int, required=True)
 
-    # Styling Options
-    parser.add_argument("--add_bg_box", action="store_true", help="Force semi-transparent box behind text")
-    parser.add_argument("--line_spacing", type=int, default=8, help="Line spacing for description")
-    parser.add_argument("--debug", action="store_true", help="Draw debug rectangles for safe zones")
-    parser.add_argument("--gradient", action="store_true", help="Add gradient bars behind text")
-    parser.add_argument("--shadow", action="store_true", help="Add text shadow for readability")
-    parser.add_argument("--letter_spacing", type=float, default=0, help="Apply custom letter spacing")
-    parser.add_argument("--blur_bg", action="store_true", help="Blur background behind text areas")
-
-    # New always-on (in professional) helpers
-    parser.add_argument("--smart_position", action="store_true",
-                        help="Auto-place text in least busy area of the safe zone")
-    parser.add_argument("--auto_contrast_bg", action="store_true",
-                        help="Ensure contrast; draws subtle rounded bg when needed")
-
-    # Professional defaults: on, unless explicitly disabled
-    parser.add_argument("--no-professional", action="store_true",
-                        help="Disable professional mode and use raw flags only")
+    # Styling
+    parser.add_argument("--add_bg_box", action="store_true", help="Semi-transparent white behind text")
+    parser.add_argument("--line_spacing", type=int, default=8)
+    parser.add_argument("--debug", action="store_true", help="Draw safe zones")
+    parser.add_argument("--gradient", action="store_true", help="Blend gradient behind text")
+    parser.add_argument("--shadow", action="store_true", help="Text shadow")
+    parser.add_argument("--letter_spacing", type=float, default=0)
+    parser.add_argument("--blur_bg", action="store_true", help="Blur art behind text")
+    parser.add_argument("--professional", action="store_true", help="Enable pro layout & styling")
+    parser.add_argument("--style", choices=list(STYLE_PROFILES.keys()) + ["custom"],
+                        default="classic",
+                        help="Pro style profile (default: classic). Use 'custom' to keep --font_family.")
 
     args = parser.parse_args()
 
-    # === Validate Text Length ===
+    # Validate text lengths
     if len(args.title) > TITLE_MAX_CHARS:
         sys.exit(f"❌ ERROR: Title exceeds {TITLE_MAX_CHARS} characters")
     if len(args.description) > DESC_MAX_CHARS:
         sys.exit(f"❌ ERROR: Description exceeds {DESC_MAX_CHARS} characters")
-
     spine_text = f"{args.title} • {args.author}" if args.author else args.title
     if len(spine_text) > SPINE_MAX_CHARS:
         sys.exit(f"❌ ERROR: Spine text exceeds {SPINE_MAX_CHARS} characters")
 
-    # === Convert Colors ===
-    def hex_to_rgb(hex_color):
-        hex_color = hex_color.lstrip('#')
-        return tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
-
     title_color = hex_to_rgb(args.title_color)
-    desc_color = hex_to_rgb(args.desc_color)
+    desc_color  = hex_to_rgb(args.desc_color)
 
-    # === Professional Mode (default ON) ===
-    professional = not args.no_professional
-    if professional:
+    # Professional preset
+    applied = {}
+    if args.professional:
+        profile_key = args.style
+        profile = STYLE_PROFILES.get(profile_key, STYLE_PROFILES["classic"])
+
+        if profile_key != "custom":
+            title_font = pick_first_installed(profile["title_fonts"])
+            body_font  = pick_first_installed(profile["body_fonts"])
+            args.font_family = title_font
+        else:
+            body_font = args.font_family
+
+        # Turn on pro helpers
         args.gradient = True
-        args.shadow = True
+        args.shadow   = profile.get("shadow", True)
+        args.blur_bg  = True
         args.add_bg_box = True
-        args.blur_bg = True
-        args.smart_position = True
-        args.auto_contrast_bg = True
+
         if args.letter_spacing == 0:
-            args.letter_spacing = 1.5
-        args.font_family = pick_font(PRO_TITLE_FONTS)
-        body_font = pick_font(PRO_BODY_FONTS)
-        print("\n✨ Professional Mode Enabled:")
-        print(f"   ✔ Title Font: {args.font_family}")
-        print(f"   ✔ Body Font: {body_font}")
-        print("   ✔ Gradient bars, Shadows, BG blur, Smart positioning, Auto contrast")
-        print(f"   ✔ Letter spacing: {args.letter_spacing}\n")
+            args.letter_spacing = profile.get("letter_spacing", 1.2)
+
+        applied = {
+            "style": profile_key,
+            "title_font": args.font_family,
+            "body_font": body_font,
+            "letter_spacing": args.letter_spacing,
+            "gradient_opacity": profile.get("gradient_opacity", 180),
+            "blur_radius": profile.get("blur_radius", 8),
+            "underline": profile.get("underline", False),
+            "frame_border": profile.get("frame_border", False),
+            "title_case": profile.get("title_case", "title"),
+        }
     else:
         body_font = args.font_family
+        applied = {
+            "style": "none",
+            "title_font": args.font_family,
+            "body_font": body_font,
+            "letter_spacing": args.letter_spacing,
+            "gradient_opacity": 0,
+            "blur_radius": 0,
+            "underline": False,
+            "frame_border": False,
+            "title_case": "as_is",
+        }
 
-    # === Show Summary ===
-    print("\n📏 Character Limits:")
-    print(f"   Title: {TITLE_MAX_CHARS} chars max")
-    print(f"   Description: {DESC_MAX_CHARS} chars max")
-    print(f"   Spine: {SPINE_MAX_CHARS} chars max\n")
-
-    print("🎨 Applied Styling:")
-    print(f"   Gradient: {args.gradient}")
-    print(f"   Shadow: {args.shadow}")
-    print(f"   Blur Background: {args.blur_bg}")
-    print(f"   Smart Position: {args.smart_position}")
-    print(f"   Auto Contrast BG: {args.auto_contrast_bg}")
-    print(f"   Letter Spacing: {args.letter_spacing}")
-    print(f"   Debug Mode: {args.debug}\n")
-
-    # === Render Cover ===
-    engine = CoverLayoutEngine(args.cover, args.width, args.height, args.spine_width, debug=args.debug)
-    print("🔍 Rendering cover...")
+    # Render
+    engine = CoverLayoutEngine(
+        args.cover, args.width, args.height, args.spine_width, debug=args.debug
+    )
 
     engine.add_text(
         title=args.title,
-        subtitle=args.subtitle,
         description=args.description,
         author=args.author,
         font_family=args.font_family,
@@ -146,15 +181,15 @@ def main():
         gradient_bg=args.gradient,
         text_shadow=args.shadow,
         letter_spacing=args.letter_spacing,
-        body_font=body_font,
+        body_font=applied["body_font"],
         blur_bg=args.blur_bg,
-        smart_position=args.smart_position,
-        auto_contrast_bg=args.auto_contrast_bg
+        # pro extras
+        pro_title_case=applied["title_case"],
+        pro_underline=applied["underline"],
+        pro_frame_border=applied["frame_border"],
+        pro_gradient_opacity=applied["gradient_opacity"],
+        pro_blur_radius=applied["blur_radius"],
     )
 
     engine.save(args.output)
     print(f"✅ Final cover saved at: {args.output}")
-
-
-if __name__ == "__main__":
-    main()
