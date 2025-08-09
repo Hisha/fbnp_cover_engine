@@ -12,6 +12,7 @@ SPINE_MAX_CHARS = 80
 PRO_TITLE_FONTS = ["Playfair Display", "EB Garamond", "Libre Baskerville"]
 PRO_BODY_FONTS = ["Merriweather", "Lora", "Roboto Slab", "DejaVu Serif"]
 
+
 def pick_font(preferred_fonts):
     for font in preferred_fonts:
         try:
@@ -19,7 +20,8 @@ def pick_font(preferred_fonts):
             return font
         except ValueError:
             continue
-    return "DejaVu Serif"  # Default fallback
+    return "DejaVu Serif"  # Fallback
+
 
 def main():
     parser = argparse.ArgumentParser(description="FBNP Cover Text Renderer CLI")
@@ -29,18 +31,20 @@ def main():
     parser.add_argument("--output", type=str, default="final_cover.png", help="Output file name")
 
     parser.add_argument("--title", type=str, required=True, help="Book title")
+    parser.add_argument("--subtitle", type=str, default="", help="Optional subtitle (front cover, under title)")
     parser.add_argument("--description", type=str, required=True, help="Back cover description text")
     parser.add_argument("--author", type=str, default="", help="Author name")
 
     # Fonts & Sizes
-    parser.add_argument("--font_family", type=str, default="DejaVu Serif", help="Font for title (overridden in professional mode)")
+    parser.add_argument("--font_family", type=str, default="DejaVu Serif",
+                        help="Title font (is auto-picked in professional mode)")
     parser.add_argument("--title_size", type=int, default=96, help="Font size for title")
     parser.add_argument("--desc_size", type=int, default=48, help="Font size for description")
     parser.add_argument("--spine_size", type=int, default=64, help="Font size for spine text")
 
     # Colors
-    parser.add_argument("--title_color", type=str, default="#000000", help="Hex color for title text")
-    parser.add_argument("--desc_color", type=str, default="#000000", help="Hex color for description text")
+    parser.add_argument("--title_color", type=str, default="#000000", help="Hex color for title/subtitle/spine")
+    parser.add_argument("--desc_color", type=str, default="#000000", help="Hex color for description")
 
     # Dimensions
     parser.add_argument("--width", type=int, required=True, help="Full cover width (pixels)")
@@ -48,14 +52,23 @@ def main():
     parser.add_argument("--spine_width", type=int, required=True, help="Spine width (pixels)")
 
     # Styling Options
-    parser.add_argument("--add_bg_box", action="store_true", help="Add semi-transparent white background behind text")
+    parser.add_argument("--add_bg_box", action="store_true", help="Force semi-transparent box behind text")
     parser.add_argument("--line_spacing", type=int, default=8, help="Line spacing for description")
     parser.add_argument("--debug", action="store_true", help="Draw debug rectangles for safe zones")
     parser.add_argument("--gradient", action="store_true", help="Add gradient bars behind text")
     parser.add_argument("--shadow", action="store_true", help="Add text shadow for readability")
     parser.add_argument("--letter_spacing", type=float, default=0, help="Apply custom letter spacing")
     parser.add_argument("--blur_bg", action="store_true", help="Blur background behind text areas")
-    parser.add_argument("--professional", action="store_true", help="Enable all professional enhancements")
+
+    # New always-on (in professional) helpers
+    parser.add_argument("--smart_position", action="store_true",
+                        help="Auto-place text in least busy area of the safe zone")
+    parser.add_argument("--auto_contrast_bg", action="store_true",
+                        help="Ensure contrast; draws subtle rounded bg when needed")
+
+    # Professional defaults: on, unless explicitly disabled
+    parser.add_argument("--no-professional", action="store_true",
+                        help="Disable professional mode and use raw flags only")
 
     args = parser.parse_args()
 
@@ -77,23 +90,23 @@ def main():
     title_color = hex_to_rgb(args.title_color)
     desc_color = hex_to_rgb(args.desc_color)
 
-    # === Professional Mode ===
-    if args.professional:
+    # === Professional Mode (default ON) ===
+    professional = not args.no_professional
+    if professional:
         args.gradient = True
         args.shadow = True
         args.add_bg_box = True
         args.blur_bg = True
+        args.smart_position = True
+        args.auto_contrast_bg = True
         if args.letter_spacing == 0:
-            args.letter_spacing = 1.5  # Default professional spacing
+            args.letter_spacing = 1.5
         args.font_family = pick_font(PRO_TITLE_FONTS)
         body_font = pick_font(PRO_BODY_FONTS)
-
         print("\n✨ Professional Mode Enabled:")
         print(f"   ✔ Title Font: {args.font_family}")
         print(f"   ✔ Body Font: {body_font}")
-        print("   ✔ Gradient bars")
-        print("   ✔ Shadows")
-        print("   ✔ Background blur")
+        print("   ✔ Gradient bars, Shadows, BG blur, Smart positioning, Auto contrast")
         print(f"   ✔ Letter spacing: {args.letter_spacing}\n")
     else:
         body_font = args.font_family
@@ -108,6 +121,8 @@ def main():
     print(f"   Gradient: {args.gradient}")
     print(f"   Shadow: {args.shadow}")
     print(f"   Blur Background: {args.blur_bg}")
+    print(f"   Smart Position: {args.smart_position}")
+    print(f"   Auto Contrast BG: {args.auto_contrast_bg}")
     print(f"   Letter Spacing: {args.letter_spacing}")
     print(f"   Debug Mode: {args.debug}\n")
 
@@ -117,6 +132,7 @@ def main():
 
     engine.add_text(
         title=args.title,
+        subtitle=args.subtitle,
         description=args.description,
         author=args.author,
         font_family=args.font_family,
@@ -131,7 +147,9 @@ def main():
         text_shadow=args.shadow,
         letter_spacing=args.letter_spacing,
         body_font=body_font,
-        blur_bg=args.blur_bg
+        blur_bg=args.blur_bg,
+        smart_position=args.smart_position,
+        auto_contrast_bg=args.auto_contrast_bg
     )
 
     engine.save(args.output)
