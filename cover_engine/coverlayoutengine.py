@@ -193,3 +193,6 @@ def main():
 
     engine.save(args.output)
     print(f"✅ Final cover saved at: {args.output}")
+
+if __name__ == "__main__":
+    main()
