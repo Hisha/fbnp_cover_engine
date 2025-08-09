@@ -4,7 +4,8 @@ from layout_engine import CoverLayoutEngine
 from text_renderer import verify_font_available
 
 # === Hard Limits (so n8n can enforce before calling this) ===
-TITLE_MAX_CHARS = 70
+TITLE_MAX_CHARS = 70           # applies to MAIN TITLE only
+SUBTITLE_MAX_CHARS = 140       # soft cap for subtitle
 DESC_MAX_CHARS = 400
 SPINE_MAX_CHARS = 80
 
@@ -21,6 +22,16 @@ def pick_font(preferred_list):
         except Exception:
             continue
     return "DejaVu Serif"
+
+
+def split_title_subtitle(text: str):
+    """Return (main_title, subtitle) by splitting on common separators."""
+    for sep in [" — ", " – ", " - ", ":", "|", "—", "–", "-"]:
+        if sep in text:
+            parts = [p.strip() for p in text.split(sep, 1)]
+            if len(parts) == 2:
+                return parts[0], parts[1]
+    return text, ""
 
 
 def main():
@@ -47,12 +58,19 @@ def main():
 
     args = parser.parse_args()
 
+    # === Split title BEFORE validation ===
+    main_title, subtitle = split_title_subtitle(args.title)
+
     # === Limits ===
-    if len(args.title) > TITLE_MAX_CHARS:
-        sys.exit(f"❌ ERROR: Title exceeds {TITLE_MAX_CHARS} characters (got {len(args.title)}).")
+    if len(main_title) > TITLE_MAX_CHARS:
+        sys.exit(f"❌ ERROR: Main title exceeds {TITLE_MAX_CHARS} characters (got {len(main_title)}).")
+    if subtitle and len(subtitle) > SUBTITLE_MAX_CHARS:
+        sys.exit(f"❌ ERROR: Subtitle exceeds {SUBTITLE_MAX_CHARS} characters (got {len(subtitle)}).")
     if len(args.description) > DESC_MAX_CHARS:
         sys.exit(f"❌ ERROR: Description exceeds {DESC_MAX_CHARS} characters (got {len(args.description)}).")
-    spine_text = f"{args.title} • {args.author}" if args.author else args.title
+
+    spine_title = main_title  # use ONLY main title on spine
+    spine_text = f"{spine_title} • {args.author}" if args.author else spine_title
     if len(spine_text) > SPINE_MAX_CHARS:
         sys.exit(f"❌ ERROR: Spine text exceeds {SPINE_MAX_CHARS} characters (got {len(spine_text)}).")
 
@@ -67,7 +85,6 @@ def main():
     # === “Professional mode” always on ===
     title_font = pick_font(PRO_TITLE_FONTS)
     body_font = pick_font(PRO_BODY_FONTS)
-    # sanity check installed (gives a clear error early if not)
     verify_font_available(title_font)
     verify_font_available(body_font)
 
@@ -75,14 +92,19 @@ def main():
     print(f"   ✔ Title Font: {title_font}")
     print(f"   ✔ Body Font:  {body_font}")
     print(f"   ✔ Gradient panel, soft shadow, subtle letter-spacing")
-    print(f"   ✔ KDP-safe placement & spine centering\n")
+    print(f"   ✔ KDP-safe placement & spine centering")
+    if subtitle:
+        print(f"   ✔ Subtitle detected (len {len(subtitle)})\n")
+    else:
+        print()
 
     # === Render ===
     engine = CoverLayoutEngine(args.cover, args.width, args.height, args.spine_width, debug=args.debug)
     print("🔍 Rendering cover...")
 
+    # Pass full title (so layout_engine can split/stylize again consistently)
     engine.add_text(
-        title=args.title,
+        title=args.title,                 # keep original for display (title + optional subtitle)
         description=args.description,
         author=args.author,
         font_family=title_font,
